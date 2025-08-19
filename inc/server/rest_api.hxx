@@ -4,6 +4,7 @@
 #define USERS_DATABASE  "users.db"
 
 #include "server/server.hxx"
+#include "db/userdb.hxx"
 
 #include "crow.h"
 
@@ -23,12 +24,15 @@ public:
     virtual void Run() override;
 
 private:
+    void defineCreateAccountRoute();
+    void defineGetAccountRoute();
     void defineRoutes();
     void callRouteFunction(const std::string& sFuncName);
 
 private:
-    crow::SimpleApp m_crow;
     int m_port;
+    crow::SimpleApp m_crow;
+    DB::UserDB* m_userDB;
 };
 
 #endif // ! __SERVER_RESTAPI_HXX__

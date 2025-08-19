@@ -23,6 +23,10 @@ public:
     virtual void Update(const std::map<std::string, std::string>& updateSql,
             const std::string& stmt) = 0;
     virtual void Remove(const std::string& stmt) = 0;
+    virtual void Select(std::map<int, std::string>& values,
+            const std::string& cols = "*",
+            const std::map<std::string, std::string>& stmtMap = {},
+            unsigned int limit = 0) = 0;
 
 protected:
     virtual void initalize() = 0;

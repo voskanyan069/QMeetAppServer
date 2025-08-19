@@ -1,7 +1,7 @@
 #include "db/sqlite.hxx"
+#include "types/serverexception.hxx"
 
 #include <sqlite3.h>
-#include <iostream>
 
 DB::SQLite::SQLite(const std::string& table)
     : m_db(nullptr)
@@ -20,7 +20,7 @@ void DB::SQLite::Insert(const std::string& valOrder,
 {
     if ( 0 == values.size() )
     {
-        return;
+        throw ServerException("Insertation values list cannot be empty");
     }
     std::string sql = "INSERT INTO " + m_tableName + " (" +
         valOrder + ") VALUES (";
@@ -66,6 +66,61 @@ void DB::SQLite::Remove(const std::string& stmt)
     execute(sql);
 }
 
+void DB::SQLite::Select(std::map<int, std::string>& values,
+        const std::string& cols,
+        const std::map<std::string, std::string>& stmtMap,
+        unsigned int limit)
+{
+    std::string sqlOpt = "";
+    std::vector<std::string> condValues;
+    if ( !stmtMap.empty() )
+    {
+        sqlOpt += " WHERE ";
+        if ( 1 == stmtMap.size() )
+        {
+            auto it = stmtMap.begin();
+            sqlOpt += it->first + "=?";
+            condValues.push_back(it->second);
+        }
+        else
+        {
+            auto it = stmtMap.begin();
+            for (; it != std::prev(stmtMap.end()); ++it)
+            {
+                sqlOpt += it->first + "=? AND ";
+                condValues.push_back(it->second);
+            }
+            sqlOpt += it->first + "=?";
+            condValues.push_back(it->second);
+        }
+    }
+    if ( 0 != limit )
+    {
+        sqlOpt += " LIMIT " + std::to_string(limit);
+    }
+    std::string sql = "SELECT " + cols + " FROM " + m_tableName + sqlOpt + ";";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        throw ServerException(DB_FAILED_TO_SEARCH);
+    }
+    for (int i = 1; i < condValues.size()+1; ++i)
+    {
+        sqlite3_bind_text(stmt, i, condValues[i-1].c_str(), -1, SQLITE_STATIC);
+    }
+    rc = sqlite3_step(stmt);
+    if ( rc != SQLITE_ROW )
+    {
+        sqlite3_finalize(stmt);
+        throw ServerException(DB_VALUE_NOT_FOUND);
+    }
+    for ( auto& it : values )
+    {
+        it.second = (const char*)sqlite3_column_text(stmt, it.first);
+    }
+}
+
 void DB::SQLite::initalize()
 {
     int rc = sqlite3_open(DBFILENAME, &m_db);
@@ -103,12 +158,20 @@ void DB::SQLite::createTable(const std::vector<std::string>& columns)
 
 void DB::SQLite::execute(const std::string& sql)
 {
-    std::cout << "Execute SQL: " << sql << std::endl;
     char* errMsg = nullptr;
     int rc = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+    std::string sError;
+    if ( nullptr != errMsg )
+    {
+        sError = errMsg;
+    }
+    sqlite3_free(errMsg);
     if ( SQLITE_OK != rc )
     {
-        std::cout << "SQL command failed: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
+        if ( std::string::npos != sError.find("UNIQUE constraint failed") )
+        {
+            throw ServerException(DB_UNIQUE_ERROR);
+        }
+        throw ServerException(sError);
     }
 }

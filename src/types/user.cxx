@@ -1,6 +1,12 @@
 #include "types/user.hxx"
 #include "hash/hash.hxx"
 
+User::User()
+    : m_username()
+    , m_password()
+{
+}
+
 User::User(const std::string& username, const std::string& password,
         Hash::HashBase* hasher)
     : m_username()

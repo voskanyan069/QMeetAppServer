@@ -1,6 +1,6 @@
 #include "db/userdb.hxx"
+#include "types/serverexception.hxx"
 
-#include <iostream>
 #include <sqlite3.h>
 
 DB::UserDB* DB::UserDB::m_instance = nullptr;
@@ -25,32 +25,42 @@ DB::UserDB* DB::UserDB::GetDatabase()
     return m_instance;
 }
 
-bool DB::UserDB::AddUser(const User& user)
+void DB::UserDB::AddUser(const User& user)
 {
-    Insert("username, password", {user.GetUsername(), user.GetPassword()});
-    return true;
+    try
+    {
+        Insert("username, password", {user.GetUsername(), user.GetPassword()});
+    }
+    catch (const ServerException& e)
+    {
+        if ( DB_UNIQUE_ERROR == e.code() )
+        {
+            throw ServerException(DB_UNIQUE_UNAME_ERROR);
+        }
+        throw e;
+    }
 }
 
-bool DB::UserDB::GetByUsername(const std::string& username, User& user)
+void DB::UserDB::IsUserExists(const User& user)
 {
-    std::string sql = "SELECT * FROM ";
-    sql += DB_TABLE_USERS;
-    sql += " WHERE username=? LIMIT 1;";
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
-    if (rc != SQLITE_OK)
+    std::map<int, std::string> values = {{1, ""}, {2, ""}};
+    std::map<std::string, std::string> stmtMap = {
+        {"username", user.GetUsername()}
+    };
+    try
     {
-        return false;
+        Select(values, "*", stmtMap, 1);
     }
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
-    if ( SQLITE_ROW != sqlite3_step(stmt) )
+    catch (const ServerException& e)
     {
-        sqlite3_finalize(stmt);
-        return false;
+        if ( DB_VALUE_NOT_FOUND == e.code() )
+        {
+            throw ServerException(DB_USER_NOT_FOUND);
+        }
+        throw e;
     }
-    User foundUser( (char*)sqlite3_column_text(stmt, 1),
-            (char*)sqlite3_column_text(stmt, 2));
-    user = foundUser;
-    sqlite3_finalize(stmt);
-    return true;
+    if ( user.GetPassword() != values[2] )
+    {
+        throw ServerException(DB_PASSWORD_IS_INCORRECT);
+    }
 }

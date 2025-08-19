@@ -7,6 +7,7 @@
 class User
 {
 public:
+    User();
     explicit User(const std::string& username, const std::string& password,
             Hash::HashBase* hasher = Hash::SHA256::GetInstance());
     ~User() = default;

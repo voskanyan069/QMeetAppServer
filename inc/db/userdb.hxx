@@ -25,8 +25,8 @@ public:
     static UserDB* GetDatabase();
 
 public:
-    bool AddUser(const User& user);
-    bool GetByUsername(const std::string& username, User& user);
+    void AddUser(const User& user);
+    void IsUserExists(const User& user);
 
 private:
     static UserDB* m_instance;

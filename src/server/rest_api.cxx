@@ -1,13 +1,11 @@
 #include "server/rest_api.hxx"
 #include "server/rest/routes.hxx"
-#include "db/userdb.hxx"
-
-#include <crow.h>
-
-#include <iostream>
+#include "types/serverexception.hxx"
 
 Server::RestAPI::RestAPI()
-    : m_crow()
+    : m_port(55005)
+    , m_crow()
+    , m_userDB(DB::UserDB::GetDatabase())
 {
 }
 
@@ -27,32 +25,58 @@ void Server::RestAPI::Init(const Configs& configs)
 
 void Server::RestAPI::Run()
 {
-    std::cout << "Run REST-API server: " << m_port << std::endl;
     m_crow
         .port(m_port)
         .multithreaded()
         .run();
 }
 
-void Server::RestAPI::defineRoutes()
+void Server::RestAPI::defineCreateAccountRoute()
 {
-    CROW_ROUTE(m_crow, ROUTE_SIGNIN) ([](const crow::request& req)
+    CROW_ROUTE(m_crow, ROUTE_CREATE_ACCOUNT) ([this](const crow::request& req)
             {
                 std::string uname = req.url_params.get("username");
                 std::string passwd = req.url_params.get("password");
                 crow::json::wvalue resp;
-                resp["username"] = uname;
-                resp["password"] = passwd;
-                DB::UserDB* db = DB::UserDB::GetDatabase();
-                db->AddUser(User(uname, passwd));
-                User u(uname, passwd);
-                if ( !db->GetByUsername("andrank", u) )
+                try
                 {
-                    std::cout << "User not found" << std::endl;
-                    return resp;
+                    m_userDB->AddUser(User(uname, passwd));
+                    resp["error"] = "ok";
                 }
-                std::cout << "u: " << u.GetUsername() << ":"
-                    << u.GetPassword() << std::endl;
+                catch (const ServerException& e)
+                {
+                    resp["error"] = e.what();
+                    resp["code"] = e.code();
+                }
                 return resp;
             });
+}
+
+void Server::RestAPI::defineGetAccountRoute()
+{
+    CROW_ROUTE(m_crow, ROUTE_CHECK_USER_EXISTS)([this](const crow::request& req)
+            {
+                std::string uname = req.url_params.get("username");
+                std::string passwd = req.url_params.get("password");
+                crow::json::wvalue resp;
+                try
+                {
+                    User user(uname, passwd);
+                    m_userDB->IsUserExists(user);
+                    resp["exists"] = true;
+                    resp["error"] = "ok";
+                }
+                catch (const ServerException& e)
+                {
+                    resp["error"] = e.what();
+                    resp["code"] = e.code();
+                }
+                return resp;
+            });
+}
+
+void Server::RestAPI::defineRoutes()
+{
+    defineCreateAccountRoute();
+    defineGetAccountRoute();
 }

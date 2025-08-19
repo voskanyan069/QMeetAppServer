@@ -22,6 +22,10 @@ public:
     virtual void Update( const std::map<std::string, std::string>& updateSql,
             const std::string& stmt) override;
     virtual void Remove(const std::string& stmt) override;
+    virtual void Select(std::map<int, std::string>& values,
+            const std::string& cols = "*",
+            const std::map<std::string, std::string>& stmtMap = {},
+            unsigned int limit = 0) override;
 
 protected:
     virtual void initalize() override;
