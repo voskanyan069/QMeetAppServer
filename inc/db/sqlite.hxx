@@ -34,8 +34,11 @@ protected:
     virtual void execute(const std::string& sql) override;
 
 protected:
-    sqlite3* m_db;
+    static sqlite3* PTR_DB;
     std::string m_tableName;
+
+private:
+    static bool IsOpen;
 };
 
 #endif // ! __DB_SQLITE_HXX__

@@ -3,7 +3,7 @@ RM=rm -rf
 MKDIR=mkdir -p
 CFLAGS_I=-I$(INCDIR) -I$(THIRD_PARTY_INC)
 CFLAGS_L=-pthread -ldl -lsqlite3
-CFLAGS=-g
+CFLAGS=-g $(CFLAGS_I)
 THIRD_PARTY_INC=./third_party/includes
 INCDIR=./inc
 SRCDIR=./src
@@ -16,11 +16,11 @@ BIN=$(BLDDIR)/server
 build: $(BIN)
 
 $(BIN): $(OBJ) $(INC)
-	$(CC) -o $(BIN) $(CFLAGS) $(CFLAGS_I) $(OBJ) $(CFLAGS_L)
+	$(CC) -o $(BIN) $(CFLAGS) $(OBJ) $(CFLAGS_L)
 
 $(BLDDIR)/%.o: %.cxx
 	@$(MKDIR) $(dir $@)
-	$(CC) $(CFLAGS_I) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BLDDIR):
 	$(MKDIR) $(BLDDIR)

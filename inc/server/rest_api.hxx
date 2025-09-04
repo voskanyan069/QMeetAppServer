@@ -5,6 +5,7 @@
 
 #include "server/server.hxx"
 #include "db/userdb.hxx"
+#include "db/meetingdb.hxx"
 
 #include "crow.h"
 
@@ -26,6 +27,8 @@ public:
 private:
     void defineCreateAccountRoute();
     void defineGetAccountRoute();
+    void defineCreateMeetingRoute();
+    void defineGetMeetingRoute();
     void defineRoutes();
     void callRouteFunction(const std::string& sFuncName);
 
@@ -33,6 +36,7 @@ private:
     int m_port;
     crow::SimpleApp m_crow;
     DB::UserDB* m_userDB;
+    DB::MeetingDB* m_meetingDB;
 };
 
 #endif // ! __SERVER_RESTAPI_HXX__

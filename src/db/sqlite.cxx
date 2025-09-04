@@ -3,9 +3,13 @@
 
 #include <sqlite3.h>
 
+#include <iostream>
+
+sqlite3* DB::SQLite::PTR_DB = nullptr;
+bool DB::SQLite::IsOpen = false;
+
 DB::SQLite::SQLite(const std::string& table)
-    : m_db(nullptr)
-    , m_tableName(table)
+    : m_tableName(table)
 {
     initalize();
 }
@@ -100,7 +104,7 @@ void DB::SQLite::Select(std::map<int, std::string>& values,
     }
     std::string sql = "SELECT " + cols + " FROM " + m_tableName + sqlOpt + ";";
     sqlite3_stmt* stmt;
-    int rc = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(PTR_DB, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK)
     {
         throw ServerException(DB_FAILED_TO_SEARCH);
@@ -123,7 +127,12 @@ void DB::SQLite::Select(std::map<int, std::string>& values,
 
 void DB::SQLite::initalize()
 {
-    int rc = sqlite3_open(DBFILENAME, &m_db);
+    if (IsOpen)
+    {
+        return;
+    }
+    IsOpen = true;
+    int rc = sqlite3_open(DBFILENAME, &PTR_DB);
     if ( SQLITE_OK != rc )
     {
         finalize();
@@ -132,12 +141,13 @@ void DB::SQLite::initalize()
 
 void DB::SQLite::finalize()
 {
-    if ( nullptr == m_db )
+    if ( nullptr == PTR_DB )
     {
         return;
     }
-    sqlite3_close(m_db);
-    m_db = nullptr;
+    IsOpen = false;
+    sqlite3_close(PTR_DB);
+    PTR_DB = nullptr;
 }
 
 void DB::SQLite::createTable(const std::vector<std::string>& columns)
@@ -159,7 +169,7 @@ void DB::SQLite::createTable(const std::vector<std::string>& columns)
 void DB::SQLite::execute(const std::string& sql)
 {
     char* errMsg = nullptr;
-    int rc = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+    int rc = sqlite3_exec(PTR_DB, sql.c_str(), nullptr, nullptr, &errMsg);
     std::string sError;
     if ( nullptr != errMsg )
     {

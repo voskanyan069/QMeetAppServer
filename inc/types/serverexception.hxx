@@ -7,10 +7,12 @@
 
 #define DB_UNIQUE_ERROR             1000
 #define DB_UNIQUE_UNAME_ERROR       1001
+#define DB_UNIQUE_MEET_ERROR        1002
 #define DB_FAILED_TO_SEARCH         2000
-#define DB_VALUE_NOT_FOUND          3000
-#define DB_USER_NOT_FOUND           3001
-#define DB_PASSWORD_IS_INCORRECT    3002
+#define DB_VALUE_NOT_FOUND          2001
+#define DB_USER_NOT_FOUND           2002
+#define DB_MEETING_NOT_FOUND        2003
+#define DB_PASSWORD_IS_INCORRECT    3000
 
 const static std::map<int, std::string> ERROR_LIST = {
     {DB_UNIQUE_ERROR, "The specified value is not unique"},
@@ -18,7 +20,9 @@ const static std::map<int, std::string> ERROR_LIST = {
     {DB_FAILED_TO_SEARCH, "Failed to search requested data"},
     {DB_VALUE_NOT_FOUND, "The requested data does not found"},
     {DB_USER_NOT_FOUND, "The user with this username does not found"},
-    {DB_PASSWORD_IS_INCORRECT, "The password is incorrect"}
+    {DB_PASSWORD_IS_INCORRECT, "The password is incorrect"},
+    {DB_UNIQUE_MEET_ERROR, "The meeting with this name already exists"},
+    {DB_MEETING_NOT_FOUND, "The meeting with this name does not found"}
 };
 
 class ServerException : public std::exception
